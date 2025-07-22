@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AsciiDoc to Markdown Converter</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@material/web@latest/material-web.min.css">
+    <style>
+        :root {
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005E;
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-tertiary: #7D5260;
+            --md-sys-color-tertiary-container: #FFD8E4;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface: #1C1B1F;
+            --md-sys-color-on-surface-variant: #49454E;
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-outline-variant: #CAC4D0;
+            --md-sys-color-background: #FFFBFE;
+            --md-sys-color-on-background: #1C1B1F;
+            --md-sys-color-error: #BA1A1A;
+            --md-sys-color-error-container: #FFDAD6;
+            --md-sys-color-on-error-container: #410002;
+            --md-sys-color-inverse-surface: #313033;
+            --md-sys-color-inverse-on-surface: #F4EFF4;
+            --md-sys-color-surface-container-lowest: #FFFFFF;
+            --md-sys-color-surface-container-low: #F7F2FA;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            --md-sys-color-surface-container-highest: #E6E0E9;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            background-color: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .app-header {
+            background: linear-gradient(135deg, var(--md-sys-color-primary) 0%, var(--md-sys-color-tertiary) 100%);
+            color: var(--md-sys-color-on-primary);
+            padding: 48px 24px 24px;
+            margin: -24px -24px 24px;
+            border-radius: 24px 24px 0 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: ripple 8s ease-in-out infinite;
+        }
+        
+        @keyframes ripple {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-30%, -30%); }
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 24px;
+            background: var(--md-sys-color-surface);
+            border-radius: 24px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 400;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        h2 {
+            color: var(--md-sys-color-primary);
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+        
+        .input-section {
+            background: var(--md-sys-color-surface-container);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .input-section:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            border: 2px solid var(--md-sys-color-outline-variant);
+            padding: 16px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 14px;
+            resize: vertical;
+            background: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--md-sys-color-primary);
+            box-shadow: 0 0 0 4px rgba(103, 80, 164, 0.12);
+        }
+        
+        textarea::placeholder {
+            color: var(--md-sys-color-on-surface-variant);
+            opacity: 0.7;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 0;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border-radius: 20px;
+            border: none;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .primary-button {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .primary-button:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+        }
+        
+        .secondary-button {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-surface);
+        }
+        
+        .secondary-button:hover {
+            background: var(--md-sys-color-secondary);
+            color: var(--md-sys-color-on-primary);
+        }
+        
+        .preview {
+            border: none;
+            border-radius: 12px;
+            padding: 24px;
+            background-color: var(--md-sys-color-surface-container-low);
+            overflow: auto;
+            max-height: 400px;
+            min-height: 200px;
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+        }
+        
+        .theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
+        }
+        
+        .theme-switch {
+            position: relative;
+            width: 52px;
+            height: 32px;
+            background: var(--md-sys-color-surface-variant);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .theme-switch-thumb {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: var(--md-sys-color-primary);
+            border-radius: 50%;
+            top: 4px;
+            left: 4px;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .theme-switch.active .theme-switch-thumb {
+            left: 24px;
+            background: var(--md-sys-color-tertiary);
+        }
+        
+        .material-icons {
+            font-size: 20px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+        
+        .dark-theme {
+            --md-sys-color-primary: #D0BCFF;
+            --md-sys-color-on-primary: #371E73;
+            --md-sys-color-primary-container: #4F378B;
+            --md-sys-color-on-primary-container: #EADDFF;
+            --md-sys-color-secondary: #CCC2DC;
+            --md-sys-color-secondary-container: #4A4458;
+            --md-sys-color-tertiary: #EFB8C8;
+            --md-sys-color-tertiary-container: #633B48;
+            --md-sys-color-surface: #1C1B1F;
+            --md-sys-color-surface-variant: #49454F;
+            --md-sys-color-on-surface: #E6E1E5;
+            --md-sys-color-on-surface-variant: #CAC4D0;
+            --md-sys-color-outline: #938F99;
+            --md-sys-color-outline-variant: #49454F;
+            --md-sys-color-background: #1C1B1F;
+            --md-sys-color-on-background: #E6E1E5;
+            --md-sys-color-error: #F2B8B5;
+            --md-sys-color-error-container: #8C1D18;
+            --md-sys-color-on-error-container: #F2B8B5;
+            --md-sys-color-inverse-surface: #E6E1E5;
+            --md-sys-color-inverse-on-surface: #1C1B1F;
+            --md-sys-color-surface-container-lowest: #0F0E11;
+            --md-sys-color-surface-container-low: #1C1B1F;
+            --md-sys-color-surface-container: #201F22;
+            --md-sys-color-surface-container-high: #2B2930;
+            --md-sys-color-surface-container-highest: #36343B;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .button-container {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AsciiDoc to Markdown Converter</h1>
+    
+    <div class="theme-toggle">
+        <label>
+            <input type="checkbox" id="themeToggle"> Dark Theme
+        </label>
+    </div>
+
+    <h2>AsciiDoc Input</h2>
+    <textarea id="asciidocInput" placeholder="Enter AsciiDoc code here..."></textarea>
+    <div class="button-container">
+        <button id="convertToMarkdown" class="mdc-button mdc-button--raised">Convert to Markdown</button>
+        <button id="downloadAsciiDoc" class="mdc-button mdc-button--outlined">Download AsciiDoc</button>
+    </div>
+
+    <h2>Markdown Output</h2>
+    <textarea id="markdownOutput" placeholder="Converted Markdown code will appear here..." readonly></textarea>
+    <div class="button-container">
+        <button id="convertToAsciiDoc" class="mdc-button mdc-button--raised">Convert to AsciiDoc</button>
+        <button id="downloadMarkdown" class="mdc-button mdc-button--outlined">Download Markdown</button>
+    </div>
+
+    <h2>Live Preview</h2>
+    <div id="livePreview" class="preview">Live preview will appear here...</div>
+</div>
+
+<script src="https://unpkg.com/@material/web@latest/material-web.min.js"></script>
+<script>
+    const asciidocInput = document.getElementById('asciidocInput');
+    const markdownOutput = document.getElementById('markdownOutput');
+    const livePreview = document.getElementById('livePreview');
+    const themeToggle = document.getElementById('themeToggle');
+
+    function convertToMarkdown() {
+        const asciidoc = asciidocInput.value;
+
+        // Improved conversion logic from AsciiDoc to Markdown
+        let markdown = asciidoc
+            // Headings
+            .replace(/^(=+)\s*(.*)$/gm, (match, level, title) => '#'.repeat(level.length) + ' ' + title.trim())
+            // Bold text
+            .replace(/\*\*(.*?)\*\*/g, '**$1**')
+            // Italic text
+            .replace(/__(.*?)__/g, '*$1*')
+            // Links
+            .replace(/(http[s]?:\/\/[^\s]+)/g, '[$1]($1)')
+            // Unordered lists
+            .replace(/^\s*\*\s+(.*)$/gm, '- $1')
+            // Ordered lists
+            .replace(/^\s*\d+\.\s+(.*)$/gm, '1. $1')
+            // Block quotes
+            .replace(/^\s*>\s*(.*)$/gm, '> $1')
+            // Remove extra new lines
+            .replace(/\n{3,}/g, '\n\n');
+
+        markdownOutput.value = markdown;
+        livePreview.innerHTML = markdown
+            .replace(/#/g, '<h1>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/- (.*)/g, '<li>$1</li>')
+            .replace(/(http[s]?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')
+            .replace(/\n/g, '<br>');
+    }
+
+    function convertToAsciiDoc() {
+        const markdown = markdownOutput.value;
+
+        // Improved conversion logic from Markdown to AsciiDoc
+        let asciidoc = markdown
+            // Headings
+            .replace(/^(#{1,6})\s*(.*)$/gm, (match, level, title) => '='.repeat(level.length) + ' ' + title.trim())
+            // Bold text
+            .replace(/\*\*(.*?)\*\*/g, '****$1****')
+            // Italic text
+            .replace(/\*(.*?)\*/g, '__$1__')
+            // Links
+            .replace(/\[(.*?)\]\((.*?)\)/g, '$1: $2')
+            // Unordered lists
+            .replace(/^\s*-\s+(.*)$/gm, '* $1')
+            // Ordered lists
+            .replace(/^\s*\d+\.\s+(.*)$/gm, '1. $1')
+            // Block quotes
+            .replace(/^\s*>\s*(.*)$/gm, '> $1')
+            // Remove extra new lines
+            .replace(/\n{3,}/g, '\n\n');
+
+        asciidocInput.value = asciidoc;
+    }
+
+    asciidocInput.addEventListener('input', convertToMarkdown);
+    // Remove readonly attribute to allow editing
+    markdownOutput.removeAttribute('readonly');
+    
+    markdownOutput.addEventListener('input', convertToAsciiDoc);
+
+    document.getElementById('downloadAsciiDoc').addEventListener('click', function() {
+        const asciidoc = asciidocInput.value;
+        const blob = new Blob([asciidoc], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'output.adoc';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('downloadMarkdown').addEventListener('click', function() {
+        const markdown = markdownOutput.value;
+        const blob = new Blob([markdown], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'output.md';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    themeToggle.addEventListener('click', function() {
+        document.body.classList.toggle('dark-theme');
+        this.classList.toggle('active');
+    });
+</script>
+
+</body>
+</html>
